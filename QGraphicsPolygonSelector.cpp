@@ -102,8 +102,25 @@ void QGraphicsPolygonSelector::_prepare_drawing(const QPointF& pos)
 void QGraphicsPolygonSelector::mousePressEvent(QMouseEvent* event)
 {
     if (_drawing_mode) {
-        if (event->button() == Qt::LeftButton && _drawing_points.empty()) {
-            _prepare_drawing(mapToScene(event->pos())); 
+        if (event->button() == Qt::LeftButton) {
+            QPointF mouse_point = mapToScene(event->pos());
+            if (_drawing_points.empty()) {
+                // add first point with left mouse press 
+                _prepare_drawing(mouse_point);
+            }
+            // else { 
+            //     // add following points with left mouse press 
+            //     QPointF last_point = _drawing_points.last(); 
+            //     if (mouse_point != last_point) {
+            //         // add a point 
+            //         _drawing_points.append(mouse_point); 
+            //         assert(_drawing_line); 
+            //         _drawing_line->setLine(last_point.x(), last_point.y(), mouse_point.x(), mouse_point.y());
+            //         _drawing_items.append(_drawing_line); 
+            //         _drawing_line = scene()->addLine(mouse_point.x(), mouse_point.y(),
+            //                                 mouse_point.x(), mouse_point.y(), _drawing_pen);
+            //     }
+            // }
         }
         else if (event->button() == Qt::RightButton) {
             // complete drawing
@@ -138,13 +155,14 @@ void QGraphicsPolygonSelector::mouseReleaseEvent(QMouseEvent* event)
 {
     if (_drawing_mode) {
         if (event->button() == Qt::LeftButton) {
+            // add following points with left mouse release 
             QPointF mouse_point = mapToScene(event->pos());
-            assert(_drawing_line); 
             assert(_drawing_points.size() > 0); 
             QPointF last_point = _drawing_points.last(); 
             if (mouse_point != last_point) {
                 // add a point 
                 _drawing_points.append(mouse_point); 
+                assert(_drawing_line); 
                 _drawing_line->setLine(last_point.x(), last_point.y(), mouse_point.x(), mouse_point.y());
                 _drawing_items.append(_drawing_line); 
                 _drawing_line = scene()->addLine(mouse_point.x(), mouse_point.y(),
