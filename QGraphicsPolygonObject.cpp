@@ -51,9 +51,7 @@ void QGraphicsPolygonObject::setHandleColor(const QColor& color)
 }
 
 // return the actual bounding area of the item
-// include the resizing handles alwyas now.
-// shoudl determine by the selected status though.
-// Todo: should also include half of the line width for handles
+// include polygon bound box + handles 
 QRectF QGraphicsPolygonObject::boundingRect() const
 {
     auto t = this->scene()->views().at(0)->transform(); //get current sace factors
@@ -64,10 +62,6 @@ QRectF QGraphicsPolygonObject::boundingRect() const
     return rect.adjusted(-x_off, -y_off, x_off, y_off);
 }
 
-// we try to update the handle size when the image size is changed
-// should trigger by relevant event of scene scale (but not found).
-// now update in paint function, this introduced non-necessary update,
-// for example the update when the item is moving.
 void QGraphicsPolygonObject::_update_handles()
 {
     if (scene()) {
@@ -145,8 +139,6 @@ void QGraphicsPolygonObject::_resize_polygon(const QPointF& pos)
 {
     assert(_resizing); 
     assert(_resizing_handle >= 0); 
-    // here we use current mouse pos as new postion
-    // should use the center of the handle, or the changing of mouse pos
     _polygon[_resizing_handle] = pos;
 }
 
@@ -188,10 +180,9 @@ void QGraphicsPolygonObject::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
         }
     }
     else {
-        // move position done by default
         QGraphicsObject::mouseMoveEvent(event);
     }
-    // trigger changing
+    // notify changing
     Q_EMIT polygonChanged(mapToScene(_polygon));
 }
 
@@ -201,7 +192,7 @@ void QGraphicsPolygonObject::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     QGraphicsObject::mouseReleaseEvent(event);
 }
 
-// special actions when item is changing
+// hook item changing 
 QVariant QGraphicsPolygonObject::itemChange(GraphicsItemChange change, const QVariant &value)
 {
     // if (change == QGraphicsItem::ItemPositionChange) {
@@ -211,8 +202,7 @@ QVariant QGraphicsPolygonObject::itemChange(GraphicsItemChange change, const QVa
     // }
 
     if (change == QGraphicsItem::ItemSelectedHasChanged) {
-        // Adjust bounding rect for selected status
-        // the bounding rect should re-calculate for selected change
+        // move to front when selected 
         bool selected = value.toBool();
         setZValue(selected ? 1 : 0);
     }

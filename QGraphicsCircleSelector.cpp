@@ -19,10 +19,13 @@ QGraphicsCircleSelector::QGraphicsCircleSelector(QWidget* parent)
     setResizeAnchor(QGraphicsView::AnchorViewCenter);
     setDragMode(QGraphicsView::ScrollHandDrag);
     QGraphicsViewZoom* zoom = new QGraphicsViewZoom(this);
+    zoom->set_modifiers(Qt::NoModifier);
 
     setScene(&_scene);
-    connect(&_scene, &QGraphicsScene::selectionChanged, this, &QGraphicsCircleSelector::onSelectionChanged);
+    connect(&_scene, &QGraphicsScene::selectionChanged, 
+            this, &QGraphicsCircleSelector::onSelectionChanged);
 
+    // default scene 
     scene()->addPixmap(QPixmap::fromImage(QImage(1920, 1080, QImage::Format_RGB888)));
     scene()->setSceneRect(QRectF(0, 0, 1920, 1080));
 }
@@ -31,7 +34,7 @@ QGraphicsCircleSelector::~QGraphicsCircleSelector()
 {
 
 }
-// Create a polygon item
+// add a polygon item
 void QGraphicsCircleSelector::addCircleItem(const QPointF& center, qreal radius)
 {
     QGraphicsCircleObject* item = new QGraphicsCircleObject(center, radius);
@@ -74,9 +77,9 @@ void QGraphicsCircleSelector::_prepare_drawing(const QPointF& pos)
     _clear_drawing(); 
     _drawing_center = pos; 
     assert(!_drawing_circle); 
-    _drawing_circle = scene()->addEllipse(0, 0, 0, 0, _drawing_pen); 
-    _h_line = scene()->addLine(0, 0, 0, 0, _drawing_pen);
-    _v_line = scene()->addLine(0, 0, 0, 0, _drawing_pen);
+    _drawing_circle = scene()->addEllipse(pos.x(), pos.y(), 0, 0, _drawing_pen); 
+    _h_line = scene()->addLine(pos.x(), pos.y(), pos.x(), pos.y(), _drawing_pen);
+    _v_line = scene()->addLine(pos.x(), pos.y(), pos.x(), pos.y(), _drawing_pen);
 }
 
 void QGraphicsCircleSelector::keyPressEvent(QKeyEvent *event)
@@ -108,7 +111,7 @@ void QGraphicsCircleSelector::mousePressEvent(QMouseEvent* event)
 void QGraphicsCircleSelector::mouseMoveEvent(QMouseEvent* event)
 {
     if (_drawing_mode) {
-        if (event->buttons() == Qt::LeftButton) {
+        if (event->buttons() & Qt::LeftButton) {
             // calculate new radius
             QPointF mouse_point = mapToScene(event->pos());
             // qDebug() << "mouse: " << mouse_point;
@@ -140,17 +143,13 @@ void QGraphicsCircleSelector::mouseReleaseEvent(QMouseEvent* event)
     QGraphicsView::mouseReleaseEvent(event);
 }
 
-// changing of the polygon by mouse dragging
-// shape change or position change by mouse dragging
-// represented by points in scene coordinate
+// on circle moving and resizing 
 void QGraphicsCircleSelector::onCircleChanged(const QPointF& center, qreal radius)
 {
     setDrawingMode(false);
-    // polygon.translate(-sceneRect().left(), -sceneRect().top());
-    // Q_EMIT ObjectChanged(oid, ObjectShape(polygon));
 }
 
-// response to mouse click or set selection
+// on selection of circle items 
 void QGraphicsCircleSelector::onSelectionChanged()
 {
     QList<QGraphicsItem*> selections = _scene.selectedItems();
@@ -161,8 +160,7 @@ void QGraphicsCircleSelector::onSelectionChanged()
         // one item is selected
         QGraphicsItem* item = selections[0];
     }
-    else
-    {
+    else {
         //qDebug() << "Number of selected items is greater than 1";
     }
 }

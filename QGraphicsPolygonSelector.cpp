@@ -7,6 +7,7 @@
 QGraphicsPolygonSelector::QGraphicsPolygonSelector(QWidget* parent)
     : QGraphicsView(parent)
     , _drawing_line(NULL)
+    , _drawing_pen(QBrush(Qt::red), 1, Qt::SolidLine) 
 {
     setFrameShape(QFrame::NoFrame);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
@@ -14,10 +15,13 @@ QGraphicsPolygonSelector::QGraphicsPolygonSelector(QWidget* parent)
     setResizeAnchor(QGraphicsView::AnchorViewCenter);
     setDragMode(QGraphicsView::ScrollHandDrag);
     QGraphicsViewZoom* zoom = new QGraphicsViewZoom(this);
+    zoom->set_modifiers(Qt::NoModifier);
 
     setScene(&_scene);
-    connect(&_scene, &QGraphicsScene::selectionChanged, this, &QGraphicsPolygonSelector::onSelectionChanged);
+    connect(&_scene, &QGraphicsScene::selectionChanged, 
+            this, &QGraphicsPolygonSelector::onSelectionChanged);
 
+    // default scene 
     scene()->addPixmap(QPixmap::fromImage(QImage(1920, 1080, QImage::Format_RGB888)));
     scene()->setSceneRect(QRectF(0, 0, 1920, 1080));
 }
@@ -27,7 +31,7 @@ QGraphicsPolygonSelector::~QGraphicsPolygonSelector()
 
 }
 
-// Create a polygon item
+// add a polygon item
 void QGraphicsPolygonSelector::addPolygonItem(const QPolygonF& polygon)
 {
     QGraphicsPolygonObject* item = new QGraphicsPolygonObject(polygon);
@@ -45,18 +49,7 @@ void QGraphicsPolygonSelector::setDrawingMode(bool drawing)
     }
     else {
         setDragMode(QGraphicsView::ScrollHandDrag);
-        if (_drawing_line) {
-            _scene.removeItem(_drawing_line);
-            delete _drawing_line;
-            _drawing_line = NULL;
-        }
-        for (int i = 0; i < _drawing_items.size(); i++) {
-            QGraphicsItem* item = _drawing_items[i];
-            _scene.removeItem(item);
-            delete item;
-        }
-        _drawing_items.clear();
-        _drawing_points.clear();
+        _clear_drawing(); 
     }
 }
 
@@ -72,42 +65,52 @@ void QGraphicsPolygonSelector::keyPressEvent(QKeyEvent *event)
     QWidget::keyPressEvent(event);
 }
 
-// drawing polygon with mouse:
-// adding a point with left click;
+void QGraphicsPolygonSelector::_clear_drawing()
+{
+    if (_drawing_line) {
+        _scene.removeItem(_drawing_line);
+        delete _drawing_line;
+        _drawing_line = NULL;
+    }
+    for (int i = 0; i < _drawing_items.size(); i++) {
+        QGraphicsItem* item = _drawing_items[i];
+        _scene.removeItem(item);
+        delete item;
+    }
+    _drawing_items.clear();
+    _drawing_points.clear();
+}
+
+void QGraphicsPolygonSelector::_prepare_drawing(const QPointF& pos)
+{
+    _clear_drawing(); 
+    assert(!_drawing_line);
+    assert(_drawing_items.size() == 0); 
+    assert(_drawing_points.size() == 0); 
+    // first point 
+    _drawing_points.append(pos);
+    _drawing_line = scene()->addLine(pos.x(), pos.y(), pos.x(), pos.y(), _drawing_pen);
+}
+
+// polygon drawing with mouse:
+// adding the first point with left press;
+// adding following point with left release; 
 // drawing lines between added points and
 // from the last point to current mouse position;
-// complete with right click, and trigger ObjectAdding event;
-// stop drawing when drawing mode is disabled;
+// complete polygon with right click;
+// cancel drawing when drawing mode is disabled;
 void QGraphicsPolygonSelector::mousePressEvent(QMouseEvent* event)
 {
     if (_drawing_mode) {
-        if (event->button() == Qt::LeftButton) {
-            QPointF mouse_point = mapToScene(event->pos());
-            if (_drawing_line != NULL) {
-                Q_ASSERT(_drawing_points.size() > 0);
-                QPoint last_point = _drawing_points.last();
-                _drawing_line->setLine(0, 0, mouse_point.x() - last_point.x(),
-                                       mouse_point.y() - last_point.y());
-                // add line for last two points
-                _drawing_items.append(_drawing_line);
-            }
-            // add point
-            _drawing_points.append(QPoint(mouse_point.x(), mouse_point.y()));
-            // add line for last point to mouse
-            _drawing_line = new QGraphicsLineItem();
-            _scene.addItem(_drawing_line);
-            QPen line_pen;
-            line_pen.setCosmetic(true); //to maintain same width of pen across zoom levels
-            line_pen.setColor(Qt::red);
-            line_pen.setStyle(Qt::SolidLine);
-            _drawing_line->setPen(line_pen);
-            _drawing_line->setPos(mouse_point);
+        if (event->button() == Qt::LeftButton && _drawing_points.empty()) {
+            _prepare_drawing(mapToScene(event->pos())); 
         }
         else if (event->button() == Qt::RightButton) {
             // complete drawing
             if (_drawing_points.size() > 3) {
                 addPolygonItem(QPolygonF(_drawing_points));
             }
+            _clear_drawing(); 
             setDrawingMode(false);
         }
     }
@@ -116,28 +119,46 @@ void QGraphicsPolygonSelector::mousePressEvent(QMouseEvent* event)
     }
 }
 
+// update line from last point to current mouse position 
 void QGraphicsPolygonSelector::mouseMoveEvent(QMouseEvent* event)
 {
     if (_drawing_mode) {
-        if (event->button() == Qt::NoButton && _drawing_line != NULL) {
+        if (_drawing_line) {
             // set the line from last point to mouse
+            assert(_drawing_points.size() > 0); 
             QPointF mouse_point = mapToScene(event->pos());
-            QPoint last_point = _drawing_points.last();
-            _drawing_line->setLine(0, 0, mouse_point.x() - last_point.x(),
-                                   mouse_point.y() - last_point.y());
+            QPointF last_point = _drawing_points.last();
+            _drawing_line->setLine(last_point.x(), last_point.y(), mouse_point.x(), mouse_point.y());
         }
     }
     QGraphicsView::mouseMoveEvent(event);
 }
 
-// changing of the polygon by mouse dragging
-// shape change or position change by mouse dragging
-// represented by points in scene coordinate
+void QGraphicsPolygonSelector::mouseReleaseEvent(QMouseEvent* event)
+{
+    if (_drawing_mode) {
+        if (event->button() == Qt::LeftButton) {
+            QPointF mouse_point = mapToScene(event->pos());
+            assert(_drawing_line); 
+            assert(_drawing_points.size() > 0); 
+            QPointF last_point = _drawing_points.last(); 
+            if (mouse_point != last_point) {
+                // add a point 
+                _drawing_points.append(mouse_point); 
+                _drawing_line->setLine(last_point.x(), last_point.y(), mouse_point.x(), mouse_point.y());
+                _drawing_items.append(_drawing_line); 
+                _drawing_line = scene()->addLine(mouse_point.x(), mouse_point.y(),
+                                         mouse_point.x(), mouse_point.y(), _drawing_pen);
+            }
+        }
+    }
+    QGraphicsView::mouseReleaseEvent(event);
+}
+
+// on polygon moving and resizing 
 void QGraphicsPolygonSelector::onPolygonChanged(const QPolygonF& polygon)
 {
     setDrawingMode(false);
-    // polygon.translate(-sceneRect().left(), -sceneRect().top());
-    // Q_EMIT ObjectChanged(oid, ObjectShape(polygon));
 }
 
 // response to mouse click or set selection
@@ -151,8 +172,7 @@ void QGraphicsPolygonSelector::onSelectionChanged()
         // one item is selected
         QGraphicsItem* item = selections[0];
     }
-    else
-    {
+    else {
         //qDebug() << "Number of selected items is greater than 1";
     }
 }

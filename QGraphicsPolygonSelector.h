@@ -2,8 +2,18 @@
 
 #include <QGraphicsView>
 #include <QGraphicsScene>
+#include <QGraphicsItem>
+#include <QGraphicsLineItem>
+#include <QPen>
 
-// for annotation with polygon shape
+/*!
+ * This class show a graphics view that supports ROI selection with polygon.
+ * When the "shift" key is pressed, user may draw polygon point by press the 
+ * left mouse key and complete the polygon by press the right mouse key. 
+ * Press "esc" key to cancel the polygon drawing. 
+ * User may click on a polygon to move and resize the ROI.   
+ * The view needs to get focus, by setFocus(), to capture the key press. 
+ */
 class QGraphicsPolygonSelector : public QGraphicsView
 {
     Q_OBJECT
@@ -12,36 +22,35 @@ public:
     ~QGraphicsPolygonSelector();
 
 public slots: 
-    // add a polygon item 
+    // add a polygon  
     void addPolygonItem(const QPolygonF& polygon);
 
-    // enable drawing polygon with mouse
+    // enable polygon drawing with mouse
     virtual void setDrawingMode(bool drawing);
 
 private slots:
+    // press "shift" key to draw polygon 
     void keyPressEvent(QKeyEvent *event);
-    // drawing polygon with mouse:
-    // adding a point with left click;
-    // drawing lines between added points and
-    // from the last point to current mouse position;
-    // complete with right click, and trigger ObjectAdding event;
-    // stop drawing when drawing mode is disabled;
+
+    // on mouse operations to draw polygon 
     void mousePressEvent(QMouseEvent*);
     void mouseMoveEvent(QMouseEvent*);
+    void mouseReleaseEvent(QMouseEvent*);
 
-    // Response to mouse operation on shape
+    // on polygon moving and resizing 
     void onPolygonChanged(const QPolygonF&);
 
-    // response to mouse click
+    // on selection of the polygons 
     void onSelectionChanged();
 
 private:
     QGraphicsScene _scene;
-
-private:
     bool _drawing_mode;
-    QVector<QPoint> _drawing_points;
+    QVector<QPointF> _drawing_points;
     QVector<QGraphicsItem*> _drawing_items;
     QGraphicsLineItem* _drawing_line;
-    void clearDrawing();
+    QPen _drawing_pen;
+
+    void _clear_drawing(); 
+    void _prepare_drawing(const QPointF& pos); 
 };

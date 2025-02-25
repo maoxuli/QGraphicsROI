@@ -85,7 +85,6 @@ void QGraphicsRectObject::_update_handles()
 // customized painting
 void QGraphicsRectObject::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
 {
-    //painter->fillRect(boundingRect(), QBrush(QColor(128, 128, 255, 128)));
     painter->setPen(_shape_pen);
     painter->drawRect(_rect);
     //draw handles for currently selected item 
@@ -249,7 +248,6 @@ void QGraphicsRectObject::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 }
 
 // hook changes from item 
-// could emit position change here 
 QVariant QGraphicsRectObject::itemChange(GraphicsItemChange change, const QVariant &value)
 {
     // if(change == QGraphicsItem::ItemPositionChange) {
@@ -261,8 +259,7 @@ QVariant QGraphicsRectObject::itemChange(GraphicsItemChange change, const QVaria
     // }
 
     if(change == QGraphicsItem::ItemSelectedHasChanged) {
-        // display handles for selection
-        //prepareGeometryChange();
+        // move to front when selected 
         bool selected = value.toBool();
         setZValue(selected ? 1 : 0);
     }

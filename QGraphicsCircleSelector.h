@@ -3,7 +3,16 @@
 #include <QGraphicsView>
 #include <QGraphicsScene>
 #include <QGraphicsEllipseItem>
+#include <QGraphicsLineItem>
+#include <QPen>
 
+/*!
+ * This class show a graphics view that supports ROI selection with circle.
+ * When the "shift" key is pressed, user may draw circle by press the left 
+ * mouse key and move in the view. Press "esc" key to cancel the drawing. 
+ * User may click on a circle to move and resize the ROI.   
+ * The view needs to get focus, by setFocus(), to capture the key press. 
+ */
 class QGraphicsCircleSelector : public QGraphicsView
 {
     Q_OBJECT
@@ -12,34 +21,30 @@ public:
     virtual ~QGraphicsCircleSelector();
 
 public slots: 
-    // add a polygon item 
+    // add a circle  
     void addCircleItem(const QPointF& center, qreal radius);
 
-    // enable drawing polygon with mouse
+    // enable circle drawing with mouse
     virtual void setDrawingMode(bool drawing);
 
 private slots:
+    // press "shift" key to draw circle 
     void keyPressEvent(QKeyEvent *event);
-    // drawing polygon with mouse:
-    // adding a point with left click;
-    // drawing lines between added points and
-    // from the last point to current mouse position;
-    // complete with right click, and trigger ObjectAdding event;
-    // stop drawing when drawing mode is disabled;
+
+    // on mouse operations to draw a circle 
     void mousePressEvent(QMouseEvent*);
     void mouseMoveEvent(QMouseEvent*);
     void mouseReleaseEvent(QMouseEvent*);
 
-    // Response to mouse operation on shape
+    // on circle moving and resizing 
     void onCircleChanged(const QPointF&, qreal);
 
-    // response to mouse click
+    // on selection of circles 
     void onSelectionChanged();
 
 private:
     QGraphicsScene _scene;
 
-private:
     bool _drawing_mode;
     QPointF _drawing_center; 
     qreal _drawing_radius; 

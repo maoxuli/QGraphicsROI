@@ -14,7 +14,7 @@ public:
     QGraphicsPolygonObject(const QPolygonF& polygon, QGraphicsItem* parent = 0);
     ~QGraphicsPolygonObject(); 
 
-     // set pen for rect
+     // set pen for shape 
     void setShapeLine(int width, Qt::PenStyle style = Qt::SolidLine);
     void setShapeColor(const QColor& color); 
 
@@ -23,8 +23,6 @@ public:
     void setHandleColor(const QColor& color); 
 
 signals:
-    // polygon is changing in shape or position
-    // the polygon is in scene coords
     void polygonChanged(const QPolygonF&);
 
 protected:
@@ -40,7 +38,7 @@ protected:
     void mouseMoveEvent(QGraphicsSceneMouseEvent*);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent*);
 
-    // keep track of the position changing
+    // hook item change, move to front when selected 
     QVariant itemChange(GraphicsItemChange change, const QVariant &value); 
 
     void _update_handles(); 
@@ -51,12 +49,12 @@ protected:
     void _clear_mode(); 
 
 protected:
-    // Polygon in local coords
+    // Polygon and handles 
     int _handle_size; 
     QPolygonF _polygon;
     QVector<QRectF> _handles;
 
-    // Keep track of mouse dragging corner
+    // Keep track of resizing 
     bool _resizing;
     int _resizing_handle; 
 

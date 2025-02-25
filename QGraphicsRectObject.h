@@ -30,7 +30,7 @@ public:
     QGraphicsRectObject(const QRectF& rect, QGraphicsItem* parent = 0);
     ~QGraphicsRectObject();
 
-    // set pen for rect
+    // set pen for shape 
     void setShapeLine(int width, Qt::PenStyle style = Qt::SolidLine);
     void setShapeColor(const QColor& color); 
 
@@ -54,7 +54,7 @@ protected:
     void mouseMoveEvent(QGraphicsSceneMouseEvent*);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent*);
 
-    // hook item change 
+    // hook item change, move to front when selected 
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 
     void _update_handles();

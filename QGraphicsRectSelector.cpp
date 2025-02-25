@@ -13,16 +13,19 @@ QGraphicsRectSelector::QGraphicsRectSelector(QWidget *parent)
     setResizeAnchor(QGraphicsView::AnchorViewCenter);
     setDragMode(QGraphicsView::ScrollHandDrag);
     QGraphicsViewZoom* zoom = new QGraphicsViewZoom(this);
+    zoom->set_modifiers(Qt::NoModifier);
 
-    setScene(&_scene);
-    connect(&_scene, &QGraphicsScene::selectionChanged, this, &QGraphicsRectSelector::onSelectionChanged);
-
-    scene()->addPixmap(QPixmap::fromImage(QImage(1920, 1080, QImage::Format_RGB888)));
-    scene()->setSceneRect(QRectF(0, 0, 1920, 1080));
-
-    // Draw rectangle with built-in rubber band operation 
+    // draw rectangle with built-in rubber band operation 
     connect(this, SIGNAL(rubberBandChanged(QRect,QPointF,QPointF)),
             this, SLOT(onRubberBandChanged(QRect,QPointF,QPointF)));
+
+    setScene(&_scene);
+    connect(&_scene, &QGraphicsScene::selectionChanged, 
+            this, &QGraphicsRectSelector::onSelectionChanged);
+
+    // default scene 
+    scene()->addPixmap(QPixmap::fromImage(QImage(1920, 1080, QImage::Format_RGB888)));
+    scene()->setSceneRect(QRectF(0, 0, 1920, 1080));
 }
 
 QGraphicsRectSelector::~QGraphicsRectSelector()
@@ -30,7 +33,7 @@ QGraphicsRectSelector::~QGraphicsRectSelector()
 
 }
 
-// Create a rect item
+// add a rectangle item
 void QGraphicsRectSelector::addRectItem(const QRectF& rect)
 {
     QGraphicsRectObject* item = new QGraphicsRectObject(rect);
@@ -39,7 +42,6 @@ void QGraphicsRectSelector::addRectItem(const QRectF& rect)
 }
 
 // enable drawing rectangle with mouse
-// diable image drag by mouse
 void QGraphicsRectSelector::setDrawingMode(bool drawing)
 {
     if(drawing) {
@@ -59,7 +61,6 @@ void QGraphicsRectSelector::keyPressEvent(QKeyEvent *event)
     else if (event->key() == Qt::Key_Escape) {
         setDrawingMode(false);
     }
-    // forward key press anyway
     QWidget::keyPressEvent(event);
 }
 
@@ -81,13 +82,13 @@ void QGraphicsRectSelector::onRubberBandChanged(QRect rubberBandRect,
     }
 }
 
-// response rect change from mouse operations
+// on rectangle moving and resizing 
 void QGraphicsRectSelector::onRectChanged(const QRectF& rect)
 {
     setDrawingMode(false);
 }
 
-// response to mouse click or set selection
+// on selection of the rectangles 
 void QGraphicsRectSelector::onSelectionChanged()
 {
     QList<QGraphicsItem*> selections = _scene.selectedItems();
@@ -98,8 +99,7 @@ void QGraphicsRectSelector::onSelectionChanged()
         // one item is selected
         QGraphicsItem* item = selections[0];
     }
-    else
-    {
+    else {
         //qDebug() << "Number of selected items is greater than 1";
     }
 }
